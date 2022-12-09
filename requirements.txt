@@ -1,0 +1,10 @@
+altair==4.2.0
+plotly==5.10.0
+hiplot==0.1.33
+matplotlib==3.4.2
+pandas==1.2.4
+numpy==1.21.6
+streamlit==1.15.2
+Pillow==9.3.0
+scikit_learn==1.2.0
+seaborn==0.12.1
