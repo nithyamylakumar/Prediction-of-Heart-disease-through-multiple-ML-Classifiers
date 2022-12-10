@@ -8,8 +8,21 @@ import numpy as np
 from PIL import Image
 import altair as alt
 import hiplot as hip
-from sklearn.metrics import confusion_matrix,classification_report, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix,classification_report, ConfusionMatrixDisplay, f1_score,precision_score,recall_score, roc_curve
 from sklearn.linear_model import LogisticRegression
+import streamlit as st 
+import numpy as np 
+import matplotlib.pyplot as plt
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import confusion_matrix,classification_report, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score
+from sklearn import datasets, svm, metrics
 
 
 st.header("Heart disease dataset from UCI ", anchor = None)
@@ -117,22 +130,6 @@ with tab4:
     Check your cardiac health at your own space and time within seconds.
     """)
 
-        import streamlit as st 
-        import numpy as np 
-
-        import matplotlib.pyplot as plt
-        from sklearn import datasets
-        from sklearn.model_selection import train_test_split
-
-        from sklearn.decomposition import PCA
-        from sklearn.svm import SVC
-        from sklearn.neighbors import KNeighborsClassifier
-        from sklearn.ensemble import RandomForestClassifier
-        from sklearn.tree import DecisionTreeClassifier
-        from sklearn.metrics import confusion_matrix,classification_report, ConfusionMatrixDisplay
-        from sklearn.metrics import accuracy_score
-        from sklearn import datasets, svm, metrics
-
         st.title('Choose your classifier')
 
         st.write("""
@@ -140,32 +137,32 @@ with tab4:
         """)
 
 
-        classifier_name = st.selectbox(
-            'Select classifier',
+        classifier_name = st.sidebar.selectbox(
+            'Select the type of Classification model',
             ('KNN', 'SVM','Decision Tree', 'Random Forest', 'Logistic Regression')
         )
+        st.write('You selected',classifier_name)
 
-    
     
         def add_parameter_ui(clf_name):
             params = dict()
             if clf_name == 'SVM':
-                C = st.slider('C', 0.01, 10.0)
+                C = st.sidebar.slider('C', 0.01, 10.0)
                 params['C'] = C
             elif clf_name == 'KNN':
-                K = st.slider('K', 1, 15)
+                K = st.sidebar.slider('K', 1, 15)
                 params['K'] = K
             elif clf_name == 'DecisionTree':
-                max_depth = st.slider('max_depth', 2, 15)
+                max_depth = st.sidebar.slider('max_depth', 2, 15)
                 params['max_depth'] = max_depth
 
             elif clf_name == 'Logistic Regression':
-                random_state = st.slider('random_state', 0 , 42)
+                random_state = st.sidebar.slider('random_state', 0 , 42)
                 params['random_state'] = random_state
-            else:
-                max_depth = st.slider('max_depth', 2, 15)
+            else :
+                max_depth = st.sidebar.slider('max_depth', 2, 15)
                 params['max_depth'] = max_depth
-                n_estimators = st.slider('n_estimators', 1, 100)
+                n_estimators = st.sidebar.slider('n_estimators', 1, 100)
                 params['n_estimators'] = n_estimators
             return params
 
@@ -187,8 +184,10 @@ with tab4:
             return clf
 
         
-        st.header("""Select your features""")
+        st.header("""User input features""")
+        
         st.write(' By providing the following biological parameters, the app would be able to predict the health of your heart with a good accuracy.')
+        st.write("Select as many features as possible")
         Age = st.slider('Enter your age: ', 0,100)
         Sex  = st.radio('Sex', (0,1))
         Chest_pain_type = st.radio('Chest pain type',(0,1,2,3))
@@ -199,9 +198,9 @@ with tab4:
         Max_Heart_Rate = st.text_input('Maximum heart rate achieved:', 170)
         Ex_Induced_Ang = st.radio('Exercise induced angina: ',(0,1))
         Oldpeak = st.text_input('oldpeak ', 2)
-        Slope = st.radio('he slope of the peak exercise ST segmen: ', (0,1,2))
-        BLD_VES_Fluros = st.radio('number of major vessels',(0,1,2,3))
-        Defect_type= st.radio('thal',(0,1,2,3))
+        Slope = st.radio('The slope of the peak exercise ST segment: ', (0,1,2))
+        BLD_VES_Fluros = st.radio('Number of major vessels',(0,1,2,3))
+        Defect_type= st.radio('Defect_type',(0,1,2,3))
 
         features =  {
             'Age' : Age,
@@ -230,7 +229,7 @@ with tab4:
         clf = get_classifier(classifier_name, params)
         #### CLASSIFICATION ####
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1234)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
@@ -244,47 +243,30 @@ with tab4:
         elif user_pred == 0:
             st.write('Your chances of getting a heart disease is quite low. Maintain the good health. Cheers')
 
-        #acc = accuracy_score(y_test, user_pred)
+        acc = accuracy_score(y_test, y_pred)
 
         st.write(f'Classifier = {classifier_name}')
-        #st.write(f'Accuracy =', acc)
+        st.write(f'Accuracy =', acc)
         st.write(f'Prediction = {user_pred}')
+
 
 with tab5:
     
         st.header("Classification Report")
+        st.write("**Precision** is defined as the fraction of relevant instances among all retrieved instances. **Recall**, sometimes referred to as ‘sensitivity, is the fraction of retrieved instances among all relevant instances. A perfect classifier has precision and recall both equal to 1.")
         report = pd.DataFrame(classification_report(y_test, y_pred,output_dict=True))
         st.dataframe(report)
 
+        st.set_option('deprecation.showPyplotGlobalUse', False)
         cm = confusion_matrix(y_test, y_pred, labels=clf.classes_)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=clf.classes_)
-        
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=clf.classes_).plot()
         st.header("Confusion matrix")
         st.markdown(
         '<p style= "color: black; font-size:22px">  it is a performance measurement for machine learning classification problem where output can be two or more classes. It is a table with 4 different combinations of predicted and actual values.',  unsafe_allow_html=True
         )
-        fig=plt.figure(figsize=(1,1))
-        sns.heatmap(cm,annot=True)
-        st.pyplot(plt)
+        st.pyplot()
 
-        st.write(f'No heart disease predicted as no heart disease= {cm[0,0]}')
-        st.write(f'No heart disease predicted as yes = {cm[0,1]}')
-        st.write(f'Presence of heart disease predicted as no heart disease = {cm[1,0]}')
-        st.write(f'Presence of heart disease predicted as yes= {cm[1,1]}')
-        
-        st.write('For 0')
-
-        st.write(f'True positive = {cm[0,0]}')
-        st.write(f'False Negative = {cm[0,1]}')
-        st.write(f'False positive = {cm[1,0]}')
-        st.write(f'True Negative= {cm[1,1]}')
-
-        st.write('For 1' )
-
-        st.write(f'True positive = {cm[1,1]}')
-        st.write(f'Flase Negative = {cm[1,0]}')
-        st.write(f'False positive = {cm[0,1]}')
-        st.write(f'True Negative = {cm[0,0]}')
-        #st.write(confusion_matrix(y_test, y_pred))
-       
-
+        fpr, tpr, _ =roc_curve(y_test,y_pred)
+        fig=px.line(fpr,tpr,labels=dict(x="False Positive Rate", y="True positive Rate"))
+        fig.update_layout(title_text='**ROC Curve**',title_x=0.5)
+        st.plotly_chart(fig)
